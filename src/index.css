@@ -1,0 +1,178 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+:root {
+  --color-brand-navy-900: #02283a;
+  --color-brand-navy-800: #003349;
+  --color-brand-blue-700: #0f5f7a;
+  --color-brand-blue-500: #2d82b7;
+  --color-brand-cyan-500: #05cab6;
+  --color-brand-cyan-100: #dff7f4;
+  --color-brand-orange-500: #ff6d00;
+  --color-bg-panel-strong: #f4f7f8;
+  --color-sky-100: #b6e5ff;
+  --color-positive-600: #0c9b7a;
+  --color-positive-100: #d8f5eb;
+  --color-warning-600: #d98324;
+  --color-warning-100: #fff1e0;
+  --color-danger-700: #c74b4b;
+  --color-danger-100: #fbe3e3;
+  --color-critical-700: #8e2f39;
+  --color-critical-100: #f6dee1;
+  --color-text-strong: #102a3a;
+  --color-text-default: #2f4858;
+  --color-text-soft: #617788;
+  --color-border-subtle: #d7e0e6;
+  --color-border-strong: #b7c8d3;
+  --surface-base: #ffffff;
+  --surface-elevated: #f4f7f8;
+  --surface-elevated-hover: #e9eff2;
+  --surface-muted: #fbfdfe;
+  --color-brand-foreground: #003349;
+  --button-secondary-bg: #003349;
+  --button-secondary-hover: #02283a;
+  --input-bg: #fcfefe;
+  --badge-neutral-bg: #eef4f7;
+  --badge-review-bg: #e4f2fb;
+  --menu-bg: #f4f8fa;
+  --menu-item-active-bg: #ffffff;
+  --tab-active-bg: #f3f8fb;
+  --tab-preview-bg: linear-gradient(180deg, rgba(182, 229, 255, 0.14), #fff 52%);
+  --alert-info-bg: #eaf4fb;
+  --alert-info-border: #cbe3f3;
+  --progress-track: #dce7ee;
+  --state-active-bg: #dfeff7;
+  --state-idle-bg: #edf2f5;
+  --switch-off-bg: #c8d6df;
+  --skeleton-bg: linear-gradient(90deg, #edf2f5 25%, #f7fafb 42%, #edf2f5 60%);
+  --chat-assistant-bg: #edf7f5;
+  --chat-assistant-border: #d4ece8;
+  --chat-user-bg: #f3f7fb;
+  --chat-user-border: #dde8ef;
+  --drawer-bg: linear-gradient(180deg, #f8fbfd 0%, #ffffff 100%);
+  --screen-card-bg: linear-gradient(180deg, rgba(182, 229, 255, 0.16), transparent 36%), #fff;
+  --mini-sidebar-bg: linear-gradient(180deg, #072d40 0%, #0c425c 100%);
+  --sidebar-bg: linear-gradient(180deg, #02283a 0%, #003349 58%, #0f5f7a 100%);
+  --hero-bg: linear-gradient(135deg, rgba(2, 40, 58, 0.98), rgba(0, 51, 73, 0.94));
+  --app-bg: radial-gradient(circle at top right, rgba(182, 229, 255, 0.4), transparent 24%),
+    linear-gradient(180deg, #f7fafb 0%, #eef3f5 100%);
+  --toggle-bg: rgba(255, 255, 255, 0.72);
+  --toggle-active-bg: #ffffff;
+  --toggle-active-text: #102a3a;
+  --shadow-soft: 0 12px 32px rgba(16, 42, 58, 0.08);
+  --shadow-elevated: 0 18px 42px rgba(16, 42, 58, 0.1);
+}
+
+[data-theme="dark"] {
+  --color-brand-navy-900: #d6ecf8;
+  --color-brand-navy-800: #003349;
+  --color-brand-blue-700: #7ec9e8;
+  --color-brand-blue-500: #59a8d0;
+  --color-brand-cyan-100: rgba(5, 202, 182, 0.16);
+  --color-bg-panel-strong: #172a36;
+  --color-sky-100: rgba(182, 229, 255, 0.18);
+  --color-positive-100: rgba(12, 155, 122, 0.18);
+  --color-warning-100: rgba(217, 131, 36, 0.16);
+  --color-danger-100: rgba(199, 75, 75, 0.16);
+  --color-critical-100: rgba(142, 47, 57, 0.18);
+  --color-text-strong: #f4fbff;
+  --color-text-default: #d2e2ea;
+  --color-text-soft: #8faab8;
+  --color-border-subtle: #274150;
+  --color-border-strong: #355568;
+  --surface-base: #10202a;
+  --surface-elevated: #172a36;
+  --surface-elevated-hover: #1e3341;
+  --surface-muted: #142632;
+  --color-brand-foreground: #eaf6ff;
+  --button-secondary-bg: #183241;
+  --button-secondary-hover: #214456;
+  --input-bg: #0f202b;
+  --badge-neutral-bg: #132733;
+  --badge-review-bg: rgba(89, 168, 208, 0.18);
+  --menu-bg: #132733;
+  --menu-item-active-bg: #1a313f;
+  --tab-active-bg: #16303d;
+  --tab-preview-bg: linear-gradient(180deg, rgba(89, 168, 208, 0.14), rgba(16, 32, 42, 0.96) 62%);
+  --alert-info-bg: rgba(89, 168, 208, 0.14);
+  --alert-info-border: rgba(89, 168, 208, 0.28);
+  --progress-track: #223847;
+  --state-active-bg: #16303d;
+  --state-idle-bg: #1a2f3b;
+  --switch-off-bg: #365264;
+  --skeleton-bg: linear-gradient(90deg, #182d39 25%, #203744 42%, #182d39 60%);
+  --chat-assistant-bg: rgba(5, 202, 182, 0.12);
+  --chat-assistant-border: rgba(5, 202, 182, 0.24);
+  --chat-user-bg: #162c38;
+  --chat-user-border: #294151;
+  --drawer-bg: linear-gradient(180deg, #132733 0%, #10202a 100%);
+  --screen-card-bg: linear-gradient(180deg, rgba(89, 168, 208, 0.1), transparent 36%), #10202a;
+  --mini-sidebar-bg: linear-gradient(180deg, #0c2431 0%, #13384b 100%);
+  --sidebar-bg: linear-gradient(180deg, #081722 0%, #0d2532 58%, #10384a 100%);
+  --hero-bg: linear-gradient(135deg, rgba(6, 18, 25, 0.98), rgba(9, 33, 44, 0.94));
+  --app-bg: radial-gradient(circle at top right, rgba(89, 168, 208, 0.12), transparent 24%),
+    linear-gradient(180deg, #09141c 0%, #0d1821 100%);
+  --toggle-bg: rgba(16, 32, 42, 0.72);
+  --toggle-active-bg: #1a313f;
+  --toggle-active-text: #f4fbff;
+  --shadow-soft: 0 14px 34px rgba(0, 0, 0, 0.26);
+  --shadow-elevated: 0 20px 46px rgba(0, 0, 0, 0.34);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: "Instrument Sans", "Segoe UI", sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.surface-app {
+  background: var(--app-bg);
+}
+
+.surface-sidebar {
+  background: var(--sidebar-bg);
+}
+
+.surface-hero {
+  background: var(--hero-bg);
+}
+
+.surface-tab-preview {
+  background: var(--tab-preview-bg);
+}
+
+.surface-drawer {
+  background: var(--drawer-bg);
+}
+
+.surface-screen {
+  background: var(--screen-card-bg);
+}
+
+.surface-mini-sidebar {
+  background: var(--mini-sidebar-bg);
+}
+
+.surface-skeleton {
+  background: var(--skeleton-bg);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
