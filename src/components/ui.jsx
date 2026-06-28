@@ -355,7 +355,7 @@ export function SwitchField({ label, checked = false, onChange, helper }) {
 export function TabRow({ items, activeId, onChange }) {
   return (
     <div
-      className="flex flex-wrap items-end gap-5 border-b border-[var(--color-border-subtle)]"
+      className="flex flex-wrap items-center gap-2 rounded-[24px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-1.5"
       role="tablist"
       aria-label="Tabs"
     >
@@ -367,10 +367,10 @@ export function TabRow({ items, activeId, onChange }) {
           aria-selected={(item.id ?? item.label) === activeId}
           onClick={() => onChange?.(item.id ?? item.label)}
           className={cn(
-            "relative -mb-px px-1 pb-3 pt-1 text-[14px] font-semibold transition",
+            "inline-flex min-h-10 items-center justify-center rounded-[18px] px-4 py-2 text-[14px] font-semibold transition",
             (item.id ?? item.label) === activeId
-              ? "text-[var(--color-text-strong)] after:absolute after:bottom-[-1px] after:left-0 after:right-0 after:h-[2px] after:rounded-full after:bg-[var(--color-brand-blue-500)]"
-              : "text-[var(--color-text-soft)] hover:text-[var(--color-text-default)]",
+              ? "bg-[var(--surface-base)] text-[var(--color-text-strong)] shadow-[var(--shadow-soft)]"
+              : "text-[var(--color-text-soft)] hover:bg-[var(--surface-base)]/70 hover:text-[var(--color-text-default)]",
           )}
         >
           {item.label}
