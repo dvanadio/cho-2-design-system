@@ -10561,243 +10561,88 @@ function PrhoReviewBlocksPage() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="grid gap-1">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-brand-blue-500)]">
-              Revisão dos blocos
+              Revisão operacional
             </p>
             <h3 className="text-[18px] font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
-              Estrutura do bloco antes da planilha consolidada
+              Contexto mínimo antes do fechamento da APR HO
             </h3>
             <p className="max-w-3xl text-[14px] leading-6 text-[var(--color-text-soft)]">
-              O técnico pode revisar primeiro o bloco operacional e depois conferir todos os agentes na tabela principal, sem sidebars redundantes.
+              O foco aqui é decidir rápido: qual bloco está sendo revisado, quais agentes ainda exigem ação e o que já pode seguir para aprovação.
             </p>
           </div>
-          <SwitchField
-            label="Modo aprendizado"
-            checked={showLearningMode}
-            onChange={setShowLearningMode}
-            helper="Mostra explicações rápidas do fluxo sem alterar os dados."
-          />
-        </div>
-
-        <TabRow
-          items={blocks.map((block) => ({ id: block.id, label: block.label }))}
-          activeId={selectedBlock?.id}
-          onChange={setSelectedBlockId}
-        />
-        <TabRow items={prhoBlockWorkspaceTabs} activeId={workspaceTab} onChange={setWorkspaceTab} />
-
-        {selectedBlock ? (
-          workspaceTab === "block-info" ? (
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-              <div className="grid gap-4 rounded-[22px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="grid gap-1">
-                    <strong className="text-[18px] font-semibold text-[var(--color-text-strong)]">
-                      {selectedBlock.label} • {selectedBlock.title}
-                    </strong>
-                    <span className="text-[14px] leading-6 text-[var(--color-text-soft)]">
-                      {selectedBlock.sectorLocation} • {selectedBlock.gheCode}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <StatusBadge status={selectedBlock.blockReviewStatus} />
-                    <Badge tone="review">{selectedBlock.extractionConfidence}% confiança</Badge>
-                  </div>
-                </div>
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  <WorksheetCell title="Função / atividade">
-                    <WorksheetMeta label="Função" value={selectedBlock.workerFunction} strong />
-                    <WorksheetMeta label="Atividade" value={selectedBlock.activityOperation} />
-                  </WorksheetCell>
-                  <WorksheetCell title="Fonte geradora">
-                    <WorksheetMeta label="Geração" value={selectedBlock.sourceGenerator} />
-                    <WorksheetMeta label="Observação" value={selectedBlock.operationalObservation} />
-                  </WorksheetCell>
-                  <WorksheetCell title="Exposição">
-                    <WorksheetMeta label="Frequência" value={selectedBlock.exposureFrequency} strong />
-                    <WorksheetMeta label="Tempo" value={selectedBlock.exposureTime} />
-                  </WorksheetCell>
-                </div>
-                <div className="rounded-[18px] border border-[var(--color-border-subtle)] bg-[var(--surface-base)] px-4 py-3 text-[13px] leading-6 text-[var(--color-text-soft)]">
-                  Documentos vinculados ao bloco: {selectedBlock.documentOrigin}
-                </div>
-              </div>
-
-              <div className="grid gap-4">
-                <div className="rounded-[22px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-5">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-brand-blue-500)]">
-                    Resumo do bloco
-                  </p>
-                  <div className="mt-3 grid gap-3">
-                    <div className="rounded-[18px] border border-[var(--color-border-subtle)] bg-[var(--surface-base)] p-4">
-                      <strong className="text-[14px] font-semibold text-[var(--color-text-strong)]">
-                        {selectedBlockRows.length} agentes atualmente vinculados
-                      </strong>
-                      <p className="mt-1 text-[13px] leading-6 text-[var(--color-text-soft)]">
-                        {selectedBlockRows.filter((row) => ["Aprovado", "Corrigido"].includes(row.reviewStatus)).length} já seguem prontos para consolidação.
-                      </p>
-                    </div>
-                    <div className="rounded-[18px] border border-[var(--color-border-subtle)] bg-[var(--surface-base)] p-4">
-                      <strong className="text-[14px] font-semibold text-[var(--color-text-strong)]">
-                        {selectedBlockPendencies.length} pendências deste bloco
-                      </strong>
-                      <p className="mt-1 text-[13px] leading-6 text-[var(--color-text-soft)]">
-                        A revisão principal continua na tabela abaixo, mas o bloco já deixa explícito onde estão os gargalos técnicos.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                {showLearningMode ? (
-                  <div className="rounded-[22px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-5">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-brand-blue-500)]">
-                      Leitura guiada
-                    </p>
-                    <div className="mt-3 grid gap-3">
-                      {prhoLearningModules.map((item) => (
-                        <div
-                          key={item.id}
-                          className="rounded-[18px] border border-[var(--color-border-subtle)] bg-[var(--surface-base)] px-4 py-3"
-                        >
-                          <strong className="text-[14px] font-semibold text-[var(--color-text-strong)]">
-                            {item.title}
-                          </strong>
-                          <p className="mt-1 text-[13px] leading-6 text-[var(--color-text-soft)]">
-                            {item.description}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {selectedBlockRows.length ? (
-                  selectedBlockRows.map((row) => (
-                    <div
-                      key={row.id}
-                      className="grid gap-3 rounded-[22px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="grid gap-1">
-                          <strong className="text-[15px] font-semibold text-[var(--color-text-strong)]">
-                            {row.name}
-                          </strong>
-                          <span className="text-[13px] text-[var(--color-text-soft)]">
-                            {row.agentType} • {row.cas || row.reference}
-                          </span>
-                        </div>
-                        <StatusBadge status={row.reviewStatus} />
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <TechnicalBadge label={row.validatedMethod || row.suggestedMethod || "Método pendente"} tone="review" />
-                        <TechnicalBadge label={row.aihaCategory || "AIHA pendente"} tone="status" />
-                      </div>
-                      <p className="text-[13px] leading-6 text-[var(--color-text-soft)]">
-                        {row.technicalDecision || row.observation || "Sem decisão técnica registrada."}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button variant="tertiary" className="min-h-9 px-3 text-[13px]" onClick={() => setSearch(row.name)}>
-                          Localizar na tabela
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <EmptyState
-                    title="Nenhum agente fechado neste bloco"
-                    description="Use a inclusão manual para complementar ou mantenha o bloco como pendente até nova evidência."
-                  />
-                )}
-              </div>
-            </div>
-          )
-        ) : null}
-      </Panel>
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <Panel className="grid gap-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="grid gap-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-brand-blue-500)]">
-                Assistente de revisão
-              </p>
-              <h3 className="text-[18px] font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
-                Inclusão técnica e apoio à leitura
-              </h3>
-            </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="tertiary" onClick={() => setShowNhoLibraryModal(true)}>
+              Biblioteca NHO
+            </Button>
             <Button variant="secondary" onClick={() => setShowAddAgentModal(true)}>
               Adicionar novo agente
             </Button>
           </div>
-          <Field label="Buscar apoio técnico por agente, CAS ou método">
-            <EditableInput
-              value={assistantQuery}
-              onChange={setAssistantQuery}
-              placeholder="Benzeno, NIOSH 1501, NHO-01..."
-            />
-          </Field>
-          <div className="grid gap-3 md:grid-cols-2">
-            {assistantInsights.map((item) => (
-              <div
-                key={item.id}
-                className="grid gap-2 rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="grid gap-1">
-                    <strong className="text-[14px] font-semibold text-[var(--color-text-strong)]">
-                      {item.name}
-                    </strong>
-                    <span className="text-[12px] text-[var(--color-text-soft)]">
-                      {item.agentType} • {item.cas || "Sem CAS"}
-                    </span>
-                  </div>
-                  <Badge tone="review">{item.confidence || 0}%</Badge>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <TechnicalBadge label={item.suggestedMethod || "Método a validar"} tone="status" />
-                  <TechnicalBadge label={item.technicalDecision || "Decisão em aberto"} tone="review" />
-                </div>
-                <p className="text-[13px] leading-6 text-[var(--color-text-soft)]">
-                  {item.technicalRecommendation || "Sem recomendação complementar."}
-                </p>
-              </div>
-            ))}
-          </div>
-        </Panel>
+        </div>
 
-        <Panel className="grid gap-4">
-          <div className="grid gap-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-brand-blue-500)]">
-              Conferência normativa
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,260px)_repeat(3,minmax(0,1fr))]">
+          <Field label="Bloco em foco">
+            <select
+              value={selectedBlockId}
+              onChange={(event) => setSelectedBlockId(event.target.value)}
+              className="min-h-10 w-full rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--input-bg)] px-3 text-[13px] text-[var(--color-text-default)] outline-none transition focus:ring-4 focus:ring-[rgba(45,130,183,0.16)]"
+            >
+              {blocks.map((block) => (
+                <option key={block.id} value={block.id}>
+                  {block.label} • {block.title}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <div className="rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] px-4 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
+              Contexto
             </p>
-            <h3 className="text-[18px] font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
-              Itens que sustentam a aprovação
-            </h3>
+            <strong className="mt-2 block text-[14px] font-semibold text-[var(--color-text-strong)]">
+              {selectedBlock?.sectorLocation || "Sem setor"}
+            </strong>
+            <span className="mt-1 block text-[13px] leading-5 text-[var(--color-text-soft)]">
+              {selectedBlock?.workerFunction || "Sem função"} • {selectedBlock?.gheCode || "Sem GHE"}
+            </span>
           </div>
-          <div className="grid gap-3">
-            {conformityItems.map((item) => (
-              <div
-                key={item.id}
-                className="rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <strong className="text-[14px] font-semibold text-[var(--color-text-strong)]">
-                    {item.label}
-                  </strong>
-                  <Badge tone={item.pending ? "critical" : "positive"}>
-                    {item.pending ? `${item.pending} pend.` : "Fechado"}
-                  </Badge>
-                </div>
-                <p className="mt-2 text-[13px] leading-6 text-[var(--color-text-soft)]">
-                  {item.description}
-                </p>
-              </div>
-            ))}
+          <div className="rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] px-4 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
+              Agentes do bloco
+            </p>
+            <strong className="mt-2 block text-[22px] font-semibold leading-none text-[var(--color-text-strong)]">
+              {selectedBlockRows.length}
+            </strong>
+            <span className="mt-1 block text-[13px] leading-5 text-[var(--color-text-soft)]">
+              {selectedBlockRows.filter((row) => blockedStatuses.has(row.reviewStatus)).length} ainda exigem ação
+            </span>
           </div>
-        </Panel>
-      </div>
+          <div className="rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] px-4 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
+              Pendências do bloco
+            </p>
+            <strong className="mt-2 block text-[22px] font-semibold leading-none text-[var(--color-text-strong)]">
+              {selectedBlockPendencies.length}
+            </strong>
+            <span className="mt-1 block text-[13px] leading-5 text-[var(--color-text-soft)]">
+              {selectedBlock?.blockReviewStatus || "Em revisão"}
+            </span>
+          </div>
+        </div>
+
+        {selectedBlock ? (
+          <div className="rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] px-4 py-4">
+            <div className="flex flex-wrap gap-2">
+              <TechnicalBadge label={selectedBlock.exposureFrequency || "Sem frequência"} tone="status" />
+              <TechnicalBadge label={selectedBlock.exposureTime || "Sem tempo"} tone="review" />
+              <TechnicalBadge label={`${selectedBlock.extractionConfidence}% confiança`} tone="review" />
+              <StatusBadge status={selectedBlock.blockReviewStatus} />
+            </div>
+            <p className="mt-3 text-[13px] leading-6 text-[var(--color-text-soft)]">
+              {selectedBlock.activityOperation}
+            </p>
+          </div>
+        ) : null}
+      </Panel>
 
       <Panel className="grid gap-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -10809,13 +10654,10 @@ function PrhoReviewBlocksPage() {
               Revisão única em tabela operacional
             </h3>
             <p className="max-w-3xl text-[14px] leading-6 text-[var(--color-text-soft)]">
-              Os campos abaixo refletem a planilha anexada: agente, limites normativos, contexto do bloco, matriz AIHA, decisão técnica e observações.
+              A tabela foi reduzida para o essencial do fechamento técnico: quem é o agente, onde ele está, qual a base técnica, qual a decisão e o que ainda pede ação humana.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={() => setShowAddAgentModal(true)}>
-              Adicionar novo agente
-            </Button>
             <Button variant="tertiary" onClick={() => setShowFilters((current) => !current)}>
               {showFilters ? "Ocultar filtros" : "Mostrar filtros"}
             </Button>
@@ -10902,7 +10744,7 @@ function PrhoReviewBlocksPage() {
         ) : null}
 
         {showFilters ? (
-          <div className="grid gap-3 rounded-[22px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 rounded-[22px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4 md:grid-cols-2 xl:grid-cols-3">
             <Field label="Busca">
               <EditableInput
                 value={search}
@@ -10912,13 +10754,6 @@ function PrhoReviewBlocksPage() {
             </Field>
             <Field label="Bloco">
               <EditableSelect value={blockFilter} options={blockOptions} onChange={setBlockFilter} />
-            </Field>
-            <Field label="Tipo">
-              <EditableSelect
-                value={typeFilter}
-                options={prhoReviewFilterOptions.type}
-                onChange={setTypeFilter}
-              />
             </Field>
             <Field label="Status da revisão">
               <EditableSelect
@@ -10933,22 +10768,15 @@ function PrhoReviewBlocksPage() {
         {filteredRows.length ? (
           <div className="overflow-hidden rounded-[24px] border border-[var(--color-border-subtle)]">
             <div className="overflow-x-auto">
-              <table className="min-w-[1880px] border-collapse">
+              <table className="min-w-[1240px] border-collapse">
                 <thead className="bg-[var(--surface-muted)]">
                   <tr className="border-b border-[var(--color-border-subtle)] text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-soft)]">
                     {[
                       "Agente",
-                      "Bloco / Contexto",
-                      "CAS",
-                      "Método",
-                      "Conc. / Unidade",
-                      "Estado físico",
-                      "Setor",
-                      "Função do trabalhador",
-                      "NR-15 / Limite",
-                      "ACGIH / NIOSH",
-                      "eSocial / Decreto",
-                      "AIHA / Decisão",
+                      "Contexto",
+                      "Exposição",
+                      "Base técnica",
+                      "Decisão",
                       "Observações",
                     ].map((label) => (
                       <th key={label} className="px-3 py-3 align-top first:pl-5 last:pr-5">
@@ -10995,69 +10823,19 @@ function PrhoReviewBlocksPage() {
                           </div>
                         </td>
                         <td className="px-3 py-3">
-                          <div className="grid min-w-[210px] gap-2">
+                          <div className="grid min-w-[220px] gap-2">
                             <span className="font-semibold text-[var(--color-text-strong)]">
                               {row.blockLabel} • {row.blockTitle}
                             </span>
-                            <span className="text-[12px] leading-5 text-[var(--color-text-soft)]">
-                              {row.blockSummary}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-3 py-3">
-                          <div className="grid min-w-[140px] gap-2">
-                            <EditableInput
-                              value={row.cas || row.reference}
-                              onChange={(value) => updateReviewRow(row.id, { cas: value, reference: value })}
-                            />
-                          </div>
-                        </td>
-                        <td className="px-3 py-3">
-                          <div className="grid min-w-[150px] gap-2">
-                            <EditableInput
-                              value={row.validatedMethod || row.suggestedMethod}
-                              onChange={(value) =>
-                                updateReviewRow(row.id, {
-                                  validatedMethod: value,
-                                  suggestedMethod: value,
-                                })
-                              }
-                            />
-                          </div>
-                        </td>
-                        <td className="px-3 py-3">
-                          <div className="grid min-w-[150px] gap-2">
-                            <EditableInput
-                              value={row.concentration}
-                              onChange={(value) => updateReviewRow(row.id, { concentration: value })}
-                            />
-                            <EditableInput
-                              value={row.unit}
-                              onChange={(value) => updateReviewRow(row.id, { unit: value })}
-                            />
-                          </div>
-                        </td>
-                        <td className="px-3 py-3">
-                          <div className="grid min-w-[150px] gap-2">
-                            <EditableInput
-                              value={row.physicalState}
-                              onChange={(value) => updateReviewRow(row.id, { physicalState: value })}
-                            />
-                          </div>
-                        </td>
-                        <td className="px-3 py-3">
-                          <div className="grid min-w-[150px] gap-2">
                             <EditableInput
                               value={row.sector}
                               onChange={(value) => updateReviewRow(row.id, { sector: value })}
+                              placeholder="Setor"
                             />
-                          </div>
-                        </td>
-                        <td className="px-3 py-3">
-                          <div className="grid min-w-[180px] gap-2">
                             <EditableInput
                               value={row.workerFunction}
                               onChange={(value) => updateReviewRow(row.id, { workerFunction: value })}
+                              placeholder="Função do trabalhador"
                             />
                             <EditableInput
                               value={row.ghe}
@@ -11067,49 +10845,67 @@ function PrhoReviewBlocksPage() {
                           </div>
                         </td>
                         <td className="px-3 py-3">
-                          <div className="grid min-w-[160px] gap-2">
+                          <div className="grid min-w-[180px] gap-2">
+                            <EditableInput
+                              value={row.cas || row.reference}
+                              onChange={(value) => updateReviewRow(row.id, { cas: value, reference: value })}
+                              placeholder="CAS ou referência"
+                            />
+                            <EditableInput
+                              value={row.concentration}
+                              onChange={(value) => updateReviewRow(row.id, { concentration: value })}
+                              placeholder="Concentração / intensidade"
+                            />
+                            <EditableInput
+                              value={row.unit}
+                              onChange={(value) => updateReviewRow(row.id, { unit: value })}
+                              placeholder="Unidade"
+                            />
+                            <EditableInput
+                              value={row.physicalState}
+                              onChange={(value) => updateReviewRow(row.id, { physicalState: value })}
+                              placeholder="Estado físico / natureza"
+                            />
+                          </div>
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="grid min-w-[220px] gap-2">
+                            <EditableInput
+                              value={row.validatedMethod || row.suggestedMethod}
+                              onChange={(value) =>
+                                updateReviewRow(row.id, {
+                                  validatedMethod: value,
+                                  suggestedMethod: value,
+                                })
+                              }
+                              placeholder="Método validado"
+                            />
                             <EditableInput
                               value={row.nr15Annex}
                               onChange={(value) => updateReviewRow(row.id, { nr15Annex: value })}
-                              placeholder="Anexo"
+                              placeholder="NR-15 anexo"
                             />
                             <EditableInput
                               value={row.nr15Limit}
                               onChange={(value) => updateReviewRow(row.id, { nr15Limit: value })}
-                              placeholder="Limite"
+                              placeholder="NR-15 limite"
                             />
+                            <div className="grid gap-2 md:grid-cols-2">
+                              <EditableInput
+                                value={row.acgihTwa}
+                                onChange={(value) => updateReviewRow(row.id, { acgihTwa: value })}
+                                placeholder="ACGIH"
+                              />
+                              <EditableInput
+                                value={row.nioshTwa}
+                                onChange={(value) => updateReviewRow(row.id, { nioshTwa: value })}
+                                placeholder="NIOSH"
+                              />
+                            </div>
                           </div>
                         </td>
                         <td className="px-3 py-3">
-                          <div className="grid min-w-[170px] gap-2">
-                            <EditableInput
-                              value={row.acgihTwa}
-                              onChange={(value) => updateReviewRow(row.id, { acgihTwa: value })}
-                              placeholder="ACGIH TWA"
-                            />
-                            <EditableInput
-                              value={row.nioshTwa}
-                              onChange={(value) => updateReviewRow(row.id, { nioshTwa: value })}
-                              placeholder="NIOSH TWA"
-                            />
-                          </div>
-                        </td>
-                        <td className="px-3 py-3">
-                          <div className="grid min-w-[160px] gap-2">
-                            <EditableInput
-                              value={row.esocialCode}
-                              onChange={(value) => updateReviewRow(row.id, { esocialCode: value })}
-                              placeholder="eSocial"
-                            />
-                            <EditableInput
-                              value={row.decretoCode}
-                              onChange={(value) => updateReviewRow(row.id, { decretoCode: value })}
-                              placeholder="Decreto 3048/99"
-                            />
-                          </div>
-                        </td>
-                        <td className="px-3 py-3">
-                          <div className="grid min-w-[190px] gap-2">
+                          <div className="grid min-w-[220px] gap-2">
                             <EditableSelect
                               value={row.aihaCategory}
                               options={prhoCategoryOptions}
@@ -11125,16 +10921,29 @@ function PrhoReviewBlocksPage() {
                               options={prhoClassificationDecisionOptions}
                               onChange={(value) => updateReviewRow(row.id, { technicalDecision: value })}
                             />
+                            <div className="grid gap-2 md:grid-cols-2">
+                              <EditableInput
+                                value={row.esocialCode}
+                                onChange={(value) => updateReviewRow(row.id, { esocialCode: value })}
+                                placeholder="eSocial"
+                              />
+                              <EditableInput
+                                value={row.decretoCode}
+                                onChange={(value) => updateReviewRow(row.id, { decretoCode: value })}
+                                placeholder="Decreto"
+                              />
+                            </div>
                           </div>
                         </td>
                         <td className="px-3 py-3 last:pr-5">
-                          <div className="grid min-w-[260px] gap-2">
+                          <div className="grid min-w-[280px] gap-2">
                             <EditableInput
-                              rows={3}
+                              rows={2}
                               value={row.technicalJustification}
                               onChange={(value) =>
                                 updateReviewRow(row.id, { technicalJustification: value })
                               }
+                              placeholder="Justificativa técnica"
                             />
                             <EditableInput
                               rows={2}
@@ -11232,7 +11041,7 @@ function PrhoReviewBlocksPage() {
             </Field>
           ) : null}
 
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Field label="Nome do agente">
               <EditableInput
                 value={manualAgentDraft.name}
@@ -11252,15 +11061,6 @@ function PrhoReviewBlocksPage() {
               <EditableInput
                 value={manualAgentDraft.cas}
                 onChange={(value) => setManualAgentDraft((current) => ({ ...current, cas: value }))}
-              />
-            </Field>
-            <Field label="Documento base">
-              <EditableSelect
-                value={manualAgentDraft.sourceDocumentId}
-                options={documents.map((document) => document.id)}
-                onChange={(value) =>
-                  setManualAgentDraft((current) => ({ ...current, sourceDocumentId: value }))
-                }
               />
             </Field>
             <Field label="Método">
@@ -11292,6 +11092,15 @@ function PrhoReviewBlocksPage() {
                 value={manualAgentDraft.physicalState}
                 onChange={(value) =>
                   setManualAgentDraft((current) => ({ ...current, physicalState: value }))
+                }
+              />
+            </Field>
+            <Field label="Documento base">
+              <EditableSelect
+                value={manualAgentDraft.sourceDocumentId}
+                options={documents.map((document) => document.id)}
+                onChange={(value) =>
+                  setManualAgentDraft((current) => ({ ...current, sourceDocumentId: value }))
                 }
               />
             </Field>
@@ -11329,6 +11138,25 @@ function PrhoReviewBlocksPage() {
                 value={manualAgentDraft.nr15Limit}
                 onChange={(value) =>
                   setManualAgentDraft((current) => ({ ...current, nr15Limit: value }))
+                }
+              />
+            </Field>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <Field label="Setor">
+              <EditableInput
+                value={manualAgentDraft.sector}
+                onChange={(value) =>
+                  setManualAgentDraft((current) => ({ ...current, sector: value }))
+                }
+              />
+            </Field>
+            <Field label="Função do trabalhador">
+              <EditableInput
+                value={manualAgentDraft.workerFunction}
+                onChange={(value) =>
+                  setManualAgentDraft((current) => ({ ...current, workerFunction: value }))
                 }
               />
             </Field>
