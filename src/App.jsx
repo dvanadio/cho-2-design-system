@@ -186,31 +186,11 @@ const prhoProcessingSequence = [
   {
     label: "Filtrando escopo de higiene",
     description: "Somente químicos, físicos e biológicos entram na revisão principal do mockup.",
-    tone: "positive",
-  },
-  {
-    label: "Identificando agentes por bloco",
-    description: "Os agentes passam a nascer dentro do bloco operacional correto.",
-    tone: "positive",
-  },
-  {
-    label: "Detectando necessidade de FDS/FISPQ",
-    description: "Agentes genéricos e produtos sem ficha técnica são separados para pendência.",
     tone: "current",
   },
   {
-    label: "Extraindo CAS e composição",
-    description: "CAS, composição, concentração e unidade ficam vinculados ao documento rastreável.",
-    tone: "idle",
-  },
-  {
-    label: "Enriquecendo base técnica",
-    description: "NR-15, NHO, ACGIH, eSocial, Decreto 3048 e LINACH são consultados.",
-    tone: "idle",
-  },
-  {
-    label: "Preparando revisão humana",
-    description: "Blocos, agentes, pendências e ações de correção ficam prontos para o técnico.",
+    label: "Preparando revisão",
+    description: "Blocos, agentes e pendências ficam organizados para a conferência técnica.",
     tone: "idle",
   },
 ];
@@ -1369,6 +1349,16 @@ function NavIcon({ name, className = "" }) {
           <path d="M14 5h5v5" />
           <path d="M10 14 19 5" />
           <path d="M19 13v5a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1v-12a1 1 0 0 1 1-1h5" />
+        </svg>
+      );
+    case "trash":
+      return (
+        <svg {...common}>
+          <path d="M4 7h16" />
+          <path d="M10 3h4" />
+          <path d="M6 7l1 13a1 1 0 0 0 1 .9h8a1 1 0 0 0 1-.9l1-13" />
+          <path d="M10 11v6" />
+          <path d="M14 11v6" />
         </svg>
       );
     case "sun":
@@ -4293,28 +4283,68 @@ function PrhoPendingPage() {
 function PrhoNewPage() {
   const navigate = useNavigate();
   const analysis = prhoAnalyses[0];
-  const stagedDocuments = documents.slice(0, 4);
   const [intakeMode, setIntakeMode] = useState(prhoIntakeModes[0].id);
-  const [learningMode, setLearningMode] = useState(false);
-  const [assistantQuery, setAssistantQuery] = useState("");
-  const [showNhoLibraryModal, setShowNhoLibraryModal] = useState(false);
-  const [documentAssignments, setDocumentAssignments] = useState(() =>
-    getPrhoDocumentAssignmentsSeed(),
-  );
-  const canStartProcessing = stagedDocuments.length > 0;
-  const assistantInsights = buildPrhoAssistantInsights(assistantQuery);
+  const [blocks, setBlocks] = useState(() => [
+    {
+      id: "draft-block-01",
+      label: "Bloco 1",
+      sectorLocation: "",
+      gheCode: "",
+      role: "",
+      workerFunction: "",
+      activityOperation: "",
+      sourceGenerator: "",
+    },
+  ]);
+  const [selectedBlockId, setSelectedBlockId] = useState("draft-block-01");
+  const autoBlockDetection = intakeMode === "system-identifies";
+  const selectedBlock =
+    blocks.find((block) => block.id === selectedBlockId) || blocks[0] || null;
 
-  function updateDocumentAssignment(documentId, patch) {
-    setDocumentAssignments((current) =>
-      current.map((item) =>
-        item.documentId === documentId
+  function updateBlock(blockId, patch) {
+    setBlocks((current) =>
+      current.map((block) =>
+        block.id === blockId
           ? {
-              ...item,
+              ...block,
               ...patch,
             }
-          : item,
+          : block,
       ),
     );
+  }
+
+  function addBlock() {
+    const nextIndex = blocks.length + 1;
+    const nextId = `draft-block-${String(nextIndex).padStart(2, "0")}`;
+
+    setBlocks((current) => [
+      ...current,
+      {
+        id: nextId,
+        label: `Bloco ${nextIndex}`,
+        sectorLocation: "",
+        gheCode: "",
+        role: "",
+        workerFunction: "",
+        activityOperation: "",
+        sourceGenerator: "",
+      },
+    ]);
+    setSelectedBlockId(nextId);
+  }
+
+  function removeBlock(blockId) {
+    if (blocks.length === 1) {
+      return;
+    }
+
+    const nextBlocks = blocks.filter((block) => block.id !== blockId);
+    setBlocks(nextBlocks);
+
+    if (selectedBlockId === blockId) {
+      setSelectedBlockId(nextBlocks[0]?.id || "");
+    }
   }
 
   return (
@@ -4324,7 +4354,7 @@ function PrhoNewPage() {
           framed={false}
           eyebrow="Fluxo A"
           title="Criar análise PRHO/APR HO"
-          description="Cadastro enxuto da análise com definição da estratégia de entrada e upload dos documentos técnicos."
+          description="Fluxo guiado em 4 etapas para abrir a análise, processar os documentos, revisar tecnicamente e aprovar."
           actions={[
             <NavLink
               key="customer"
@@ -4335,392 +4365,225 @@ function PrhoNewPage() {
             </NavLink>,
             <Button
               key="create"
-              disabled={!canStartProcessing}
               onClick={() => navigate(`/app/prho/${analysis.id}/processing`)}
             >
-              Iniciar processamento técnico
+              Processar arquivos
             </Button>,
           ]}
         >
           <Stepper steps={flowSteps} current={0} />
         </PageHeader>
       }
-      bodyClassName="grid gap-6"
+      bodyClassName="grid gap-5"
     >
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <Panel className="grid gap-6">
-          <div className="grid gap-4 rounded-[24px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="grid gap-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-brand-blue-500)]">
-                  Estratégia da análise
-                </p>
-                <h3 className="text-[18px] font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
-                  Escolha como os blocos operacionais entram no fluxo
-                </h3>
-                <p className="max-w-3xl text-[14px] leading-6 text-[var(--color-text-soft)]">
-                  Bloco operacional = setor/local + função + atividade + agentes ligados ao mesmo cenário de exposição. Aqui o usuário só decide a porta de entrada do material.
-                </p>
-              </div>
-              <Button variant="tertiary" onClick={() => setShowNhoLibraryModal(true)}>
-                Consultar biblioteca NHO
-              </Button>
-            </div>
-            <TabRow items={prhoIntakeModes} activeId={intakeMode} onChange={setIntakeMode} />
-            <div className="grid gap-3 rounded-[18px] border border-[var(--color-border-subtle)] bg-[var(--surface-base)] p-4">
-              <p className="text-[14px] leading-6 text-[var(--color-text-soft)]">
-                {intakeMode === "system-identifies"
-                  ? "O sistema recebe os arquivos, identifica os blocos operacionais durante o processamento e distribui os agentes automaticamente na revisão."
-                  : "O usuário pode subir os arquivos já vinculando o documento a um bloco existente, a um novo bloco operacional ou deixando como documento geral da análise."}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <TechnicalBadge
-                  label={
-                    intakeMode === "system-identifies"
-                      ? "Leitura automática por bloco"
-                      : "Vínculo manual opcional por bloco"
-                  }
-                  tone="review"
-                />
-                <TechnicalBadge label="Sem revisão técnica antecipada" tone="status" />
-              </div>
-            </div>
-          </div>
+      <Panel className="grid gap-6">
+        <div className="grid gap-2 rounded-[24px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] px-5 py-5 md:px-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-brand-blue-500)]">
+            Etapa 1 de 4
+          </p>
+          <h3 className="text-[24px] font-semibold tracking-[-0.04em] text-[var(--color-text-strong)]">
+            Informações iniciais da análise
+          </h3>
+          <p className="max-w-3xl text-[14px] leading-6 text-[var(--color-text-soft)]">
+            Preencha os dados principais e escolha se o sistema vai identificar automaticamente os blocos operacionais ou se eles serão criados manualmente na revisão.
+          </p>
+        </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Cliente">
-              <Select value={analysis.customer} />
-            </Field>
-            <Field label="Responsável técnico">
-              <Select value={analysis.responsible} />
-            </Field>
-            <Field label="Título da análise" full>
-              <Input value={analysis.title} />
-            </Field>
-          </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Cliente">
+            <Select value={analysis.customer} />
+          </Field>
+          <Field label="Responsável técnico">
+            <Select value={analysis.responsible} />
+          </Field>
+          <Field label="Título da análise" full>
+            <Input value={analysis.title} />
+          </Field>
+        </div>
 
-          <div className="grid gap-4 rounded-[24px] border border-dashed border-[var(--color-border-strong)] bg-[var(--surface-muted)] p-6 text-center">
-            <strong className="text-[18px] font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
-              Upload de documentos da análise
-            </strong>
-            <p className="mx-auto max-w-3xl text-[15px] leading-7 text-[var(--color-text-soft)]">
-              {intakeMode === "system-identifies"
-                ? "Nesta etapa o usuário apenas anexa os arquivos. O reconhecimento técnico acontece no processamento, sem antecipar revisão."
-                : "Nesta etapa o usuário anexa os arquivos e, se quiser, já organiza o material por bloco operacional para ganhar velocidade no processamento técnico."}
+        <div className="grid gap-4 rounded-[24px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-5 md:p-6">
+          <div className="grid gap-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-brand-blue-500)]">
+              Forma da análise
             </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {["PDF", "XLSX", "XLS", "DOCX", "DOC", "RTF", "TXT", "PNG", "JPG"].map((type) => (
-                <TechnicalBadge key={type} label={type} tone="review" />
-              ))}
-            </div>
+            <p className="text-[13px] leading-6 text-[var(--color-text-soft)]">
+              Escolha como os blocos operacionais serão definidos nesta análise.
+            </p>
           </div>
 
-          <div className="grid gap-4 rounded-[24px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-base)] p-4">
+            <SwitchField
+              label="Identificar automaticamente"
+              checked={autoBlockDetection}
+              onChange={(checked) =>
+                setIntakeMode(checked ? "system-identifies" : "upload-by-block")
+              }
+              helper="Quando desligado, os blocos precisam ser criados manualmente."
+            />
+          </div>
+
+          {autoBlockDetection ? (
+            <div className="grid gap-3 rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-base)] p-4">
               <div className="grid gap-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-brand-blue-500)]">
-                  Lote anexado
-                </p>
-                <h3 className="text-[18px] font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
-                  Prévia dos arquivos selecionados
-                </h3>
-                <p className="text-[14px] leading-6 text-[var(--color-text-soft)]">
-                  {intakeMode === "system-identifies"
-                    ? "O pacote abaixo segue direto para leitura automática. Nenhum passo técnico é exigido do usuário aqui."
-                    : "O pacote abaixo permite orientar o vínculo operacional do documento sem forçar instruções técnicas complexas."}
+                <strong className="text-[14px] font-semibold text-[var(--color-text-strong)]">
+                  Upload dos arquivos da análise
+                </strong>
+                <p className="text-[12px] leading-5 text-[var(--color-text-soft)]">
+                  Envie todos os documentos e o sistema identifica os blocos automaticamente na próxima etapa.
                 </p>
               </div>
-              <Badge tone="review">{documents.length} arquivos anexados</Badge>
-            </div>
-            <div className="grid gap-4">
-              {stagedDocuments.map((file) => {
-                const assignment =
-                  documentAssignments.find((item) => item.documentId === file.id) || null;
-
-                return (
-                  <div
-                    key={file.id}
-                    className="grid gap-4 rounded-[18px] border border-[var(--color-border-subtle)] bg-[var(--surface-base)] p-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]"
-                  >
-                    <div className="grid gap-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <strong className="text-[14px] font-semibold text-[var(--color-text-strong)]">
-                          {file.name}
-                        </strong>
-                        <TechnicalBadge label={file.detectedType} tone="review" />
-                      </div>
-                      <p className="text-[13px] leading-5 text-[var(--color-text-soft)]">
-                        {file.pages
-                          ? `${file.pages} páginas preparadas para leitura`
-                          : file.sheets
-                            ? `${file.sheets} abas preparadas para leitura`
-                            : "Arquivo preparado para leitura técnica"}
-                      </p>
-                      <p className="text-[13px] leading-5 text-[var(--color-text-soft)]">
-                        {file.preview}
-                      </p>
-                    </div>
-                    {intakeMode === "upload-by-block" ? (
-                      <div className="grid gap-3">
-                        <Field label="Destino do documento">
-                          <EditableSelect
-                            value={assignment?.linkMode || prhoDocumentLinkModes[0]}
-                            options={prhoDocumentLinkModes}
-                            onChange={(value) =>
-                              updateDocumentAssignment(file.id, {
-                                linkMode: value,
-                                blockId: value === "Bloco existente" ? "block-01" : "",
-                                newBlock:
-                                  value === "Novo bloco operacional"
-                                    ? {
-                                        sectorLocation: "",
-                                        gheCode: "",
-                                        workerFunction: "",
-                                        activityOperation: "",
-                                      }
-                                    : null,
-                              })
-                            }
-                          />
-                        </Field>
-
-                        {assignment?.linkMode === "Bloco existente" ? (
-                          <Field label="Selecionar bloco existente">
-                            <select
-                              value={assignment.blockId}
-                              onChange={(event) =>
-                                updateDocumentAssignment(file.id, {
-                                  blockId: event.target.value,
-                                })
-                              }
-                              className="min-h-10 w-full rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--input-bg)] px-3 text-[13px] text-[var(--color-text-default)] outline-none transition focus:ring-4 focus:ring-[rgba(45,130,183,0.16)]"
-                            >
-                              {prhoReviewBlocksSeed.map((block) => (
-                                <option key={block.id} value={block.id}>
-                                  {block.label} • {block.title}
-                                </option>
-                              ))}
-                            </select>
-                          </Field>
-                        ) : null}
-
-                        {assignment?.linkMode === "Novo bloco operacional" ? (
-                          <div className="grid gap-3 rounded-[18px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4 md:grid-cols-2">
-                            <Field label="Setor / local">
-                              <EditableInput
-                                value={assignment.newBlock?.sectorLocation || ""}
-                                onChange={(value) =>
-                                  updateDocumentAssignment(file.id, {
-                                    newBlock: {
-                                      ...assignment.newBlock,
-                                      sectorLocation: value,
-                                    },
-                                  })
-                                }
-                              />
-                            </Field>
-                            <Field label="GHE / código">
-                              <EditableInput
-                                value={assignment.newBlock?.gheCode || ""}
-                                onChange={(value) =>
-                                  updateDocumentAssignment(file.id, {
-                                    newBlock: {
-                                      ...assignment.newBlock,
-                                      gheCode: value,
-                                    },
-                                  })
-                                }
-                              />
-                            </Field>
-                            <Field label="Função">
-                              <EditableInput
-                                value={assignment.newBlock?.workerFunction || ""}
-                                onChange={(value) =>
-                                  updateDocumentAssignment(file.id, {
-                                    newBlock: {
-                                      ...assignment.newBlock,
-                                      workerFunction: value,
-                                    },
-                                  })
-                                }
-                              />
-                            </Field>
-                            <Field label="Atividade / operação">
-                              <EditableInput
-                                value={assignment.newBlock?.activityOperation || ""}
-                                onChange={(value) =>
-                                  updateDocumentAssignment(file.id, {
-                                    newBlock: {
-                                      ...assignment.newBlock,
-                                      activityOperation: value,
-                                    },
-                                  })
-                                }
-                              />
-                            </Field>
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : (
-                      <div className="grid content-start gap-3 rounded-[18px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4">
-                        <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[var(--color-brand-blue-500)]">
-                          Organização automática
-                        </p>
-                        <p className="text-[13px] leading-6 text-[var(--color-text-soft)]">
-                          O sistema vai identificar setor/local, função, atividade e agentes automaticamente durante o processamento.
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          <TechnicalBadge label="Bloco identificado pela IA" tone="review" />
-                          <TechnicalBadge label="Sem ação manual agora" tone="status" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4">
-            <Button variant="ghost">Adicionar mais documentos</Button>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="tertiary">Salvar rascunho</Button>
-              <Button
-                disabled={!canStartProcessing}
-                onClick={() => navigate(`/app/prho/${analysis.id}/processing`)}
-              >
-                Iniciar processamento técnico
-              </Button>
-            </div>
-          </div>
-        </Panel>
-
-        <div className="grid gap-6">
-          <Panel className="grid gap-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="grid gap-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-brand-blue-500)]">
-                  Assistente técnico
+              <div className="grid gap-3 rounded-[18px] border border-dashed border-[var(--color-border-strong)] bg-[var(--surface-muted)] px-4 py-8 text-center">
+                <strong className="text-[14px] font-semibold text-[var(--color-text-strong)]">
+                  Arraste os arquivos aqui ou selecione do computador
+                </strong>
+                <p className="text-[12px] leading-5 text-[var(--color-text-soft)]">
+                  PDF, XLSX, XLS, DOCX, DOC, RTF, TXT, PNG e JPG
                 </p>
-                <h3 className="text-[18px] font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
-                  Base de apoio para montar a análise
-                </h3>
-              </div>
-              <span className="grid size-10 place-items-center rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] text-[var(--color-brand-blue-700)]">
-                <NavIcon name="link" className="size-4" />
-              </span>
-            </div>
-            <Field label="Buscar agente, CAS ou método">
-              <EditableInput
-                value={assistantQuery}
-                onChange={setAssistantQuery}
-                placeholder="Tolueno, ruído, NHO-01, 108-88-3..."
-              />
-            </Field>
-            <div className="grid gap-3">
-              {assistantInsights.map((item) => (
-                <div
-                  key={item.id}
-                  className="grid gap-2 rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="grid gap-1">
-                      <strong className="text-[14px] font-semibold text-[var(--color-text-strong)]">
-                        {item.name}
-                      </strong>
-                      <span className="text-[12px] text-[var(--color-text-soft)]">
-                        {item.agentType} • {item.cas || "Sem CAS"}
-                      </span>
-                    </div>
-                    <Badge tone="review">{item.confidence || 0}% confiança</Badge>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <TechnicalBadge label={item.suggestedMethod || "Método a validar"} tone="status" />
-                    <TechnicalBadge label={item.aihaCategory || "Categoria AIHA pendente"} tone="review" />
-                  </div>
-                  <p className="text-[13px] leading-6 text-[var(--color-text-soft)]">
-                    {item.technicalRecommendation || item.technicalObservation || "Sem recomendação complementar."}
-                  </p>
+                <div className="flex justify-center">
+                  <Button variant="tertiary">Selecionar arquivos</Button>
                 </div>
-              ))}
+              </div>
             </div>
-          </Panel>
-
-          <Panel className="grid gap-4">
-            <div className="grid gap-2">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-brand-blue-500)]">
-                Modo aprendizado
-              </p>
-              <SwitchField
-                label="Exibir explicações operacionais durante o mockup"
-                checked={learningMode}
-                onChange={setLearningMode}
-                helper="Útil para treinamento interno sem poluir a jornada principal do usuário."
-              />
-            </div>
-            {learningMode ? (
-              <div className="grid gap-3">
-                {prhoLearningModules.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-[18px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] px-4 py-3"
+          ) : (
+            <div className="grid gap-4 rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-base)] p-4">
+              <div className="overflow-x-auto border-b border-[var(--color-border-subtle)]">
+                <div className="flex min-w-max items-end gap-1">
+                  {blocks.map((block) => (
+                    <div
+                      key={block.id}
+                      className={cn(
+                        "relative flex items-center gap-1 rounded-t-[8px] border border-b-0 pl-3 pr-2",
+                        block.id === selectedBlockId
+                          ? "-mb-px border-[var(--color-border-subtle)] bg-[var(--surface-muted)]"
+                          : "border-transparent bg-transparent",
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setSelectedBlockId(block.id)}
+                        className={cn(
+                          "py-2 text-[14px] leading-none transition",
+                          block.id === selectedBlockId
+                            ? "font-medium text-[var(--color-text-strong)]"
+                            : "font-normal text-[var(--color-brand-blue-500)] hover:text-[var(--color-brand-blue-700)]",
+                        )}
+                      >
+                        {block.label}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeBlock(block.id)}
+                        disabled={blocks.length === 1}
+                        aria-label={`Apagar ${block.label}`}
+                        className={cn(
+                          "grid size-5 place-items-center rounded-md transition",
+                          blocks.length === 1
+                            ? "cursor-not-allowed text-[var(--color-text-soft)]/50"
+                            : "text-[var(--color-text-soft)] hover:bg-[var(--surface-elevated)] hover:text-[var(--color-critical-700)]",
+                        )}
+                      >
+                        <NavIcon name="trash" className="size-3.5" />
+                      </button>
+                      {block.id === selectedBlockId ? (
+                        <span className="absolute inset-x-0 -bottom-px h-[2px] bg-[var(--surface-muted)]" />
+                      ) : null}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addBlock}
+                    className="px-3 py-2 text-[14px] font-normal leading-none text-[var(--color-brand-blue-500)] transition hover:text-[var(--color-brand-blue-700)]"
                   >
+                    Novo bloco
+                  </button>
+                </div>
+              </div>
+
+              {selectedBlock ? (
+                <div className="grid gap-4">
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <Field label="Setor / local">
+                      <EditableInput
+                        value={selectedBlock.sectorLocation}
+                        onChange={(value) =>
+                          updateBlock(selectedBlock.id, { sectorLocation: value })
+                        }
+                        placeholder="Ex.: Cabine de pintura"
+                      />
+                    </Field>
+                    <Field label="Código GHE / GSE">
+                      <EditableInput
+                        value={selectedBlock.gheCode}
+                        onChange={(value) =>
+                          updateBlock(selectedBlock.id, { gheCode: value })
+                        }
+                        placeholder="Ex.: GHE-07"
+                      />
+                    </Field>
+                    <Field label="Cargo">
+                      <EditableInput
+                        value={selectedBlock.role}
+                        onChange={(value) => updateBlock(selectedBlock.id, { role: value })}
+                        placeholder="Ex.: Pintor industrial"
+                      />
+                    </Field>
+                    <Field label="Função">
+                      <EditableInput
+                        value={selectedBlock.workerFunction}
+                        onChange={(value) =>
+                          updateBlock(selectedBlock.id, { workerFunction: value })
+                        }
+                        placeholder="Ex.: Aplicação de tinta"
+                      />
+                    </Field>
+                    <Field label="Atividade / operação" full>
+                      <EditableInput
+                        rows={2}
+                        value={selectedBlock.activityOperation}
+                        onChange={(value) =>
+                          updateBlock(selectedBlock.id, {
+                            activityOperation: value,
+                          })
+                        }
+                        placeholder="Descreva a atividade principal do bloco"
+                      />
+                    </Field>
+                    <Field label="Fonte geradora" full>
+                      <EditableInput
+                        rows={2}
+                        value={selectedBlock.sourceGenerator}
+                        onChange={(value) =>
+                          updateBlock(selectedBlock.id, { sourceGenerator: value })
+                        }
+                        placeholder="Ex.: tintas, solventes, calor, ruído, poeira"
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="grid gap-3 rounded-[18px] border border-dashed border-[var(--color-border-strong)] bg-[var(--surface-muted)] px-4 py-8 text-center">
                     <strong className="text-[14px] font-semibold text-[var(--color-text-strong)]">
-                      {item.title}
+                      Upload dos arquivos do {selectedBlock.label.toLowerCase()}
                     </strong>
-                    <p className="mt-1 text-[13px] leading-6 text-[var(--color-text-soft)]">
-                      {item.description}
+                    <p className="text-[12px] leading-5 text-[var(--color-text-soft)]">
+                      Envie os documentos que pertencem a este bloco operacional.
                     </p>
+                    <div className="flex justify-center">
+                      <Button variant="tertiary">Selecionar arquivos</Button>
+                    </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <Toast
-                title="Interface limpa para o cliente final"
-                description="As explicações ficam escondidas até o modo aprendizado ser ativado."
-              />
-            )}
-          </Panel>
-        </div>
-      </div>
-
-      <Modal
-        open={showNhoLibraryModal}
-        title="Biblioteca técnica NHO"
-        description="Consulta rápida dos métodos mais usados no mockup para orientar leitura, quantificação e revisão."
-        onClose={() => setShowNhoLibraryModal(false)}
-        actions={[
-          <Button key="close-nho-library" variant="ghost" onClick={() => setShowNhoLibraryModal(false)}>
-            Fechar
-          </Button>,
-        ]}
-      >
-        <div className="grid gap-3">
-          {prhoNhoMethodLibrary.map((method) => (
-            <div
-              key={method.id}
-              className="grid gap-3 rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="grid gap-1">
-                  <strong className="text-[15px] font-semibold text-[var(--color-text-strong)]">
-                    {method.label} • {method.title}
-                  </strong>
-                  <p className="text-[13px] leading-6 text-[var(--color-text-soft)]">
-                    {method.summary}
-                  </p>
                 </div>
-                <Badge tone="status">{method.appliesTo.length} usos</Badge>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {method.appliesTo.map((item) => (
-                  <TechnicalBadge key={item} label={item} tone="review" />
-                ))}
-              </div>
+              ) : null}
             </div>
-          ))}
+          )}
         </div>
-      </Modal>
+
+        <div className="flex flex-wrap items-center justify-end gap-2 rounded-[22px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4">
+          <Button variant="tertiary">Salvar rascunho</Button>
+          <Button onClick={() => navigate(`/app/prho/${analysis.id}/processing`)}>
+            Processar arquivos
+          </Button>
+        </div>
+      </Panel>
     </UnifiedPagePanel>
   );
 }
@@ -4739,14 +4602,8 @@ function PrhoProcessingPage() {
   const { id } = useParams();
   const analysis = prhoAnalyses.find((item) => item.id === id) || prhoAnalyses[0];
   const blocks = getPrhoReviewBlocksSeed();
-  const pendencies = getPrhoReviewPendenciesSeed();
   const metrics = getPrhoOperationalMetrics(blocks, prhoReviewPendenciesSeed);
-  const outOfScopeDocuments = ["fotos_area_pintura.zip", "mapa_ergonomico_2025.pdf"];
   const processingProgress = 68;
-  const [showNhoLibraryModal, setShowNhoLibraryModal] = useState(false);
-  const criticalPendencies = pendencies.filter((item) => item.severity === "Crítica");
-  const highPendencies = pendencies.filter((item) => item.severity === "Alta");
-  const mediumPendencies = pendencies.filter((item) => item.severity === "Média");
 
   return (
     <UnifiedPagePanel
@@ -4755,330 +4612,106 @@ function PrhoProcessingPage() {
           framed={false}
           eyebrow="Fluxo A"
           title="Processamento técnico da análise"
-          description="Leitura técnica organizada por blocos operacionais, separando escopo de higiene, agentes detectados e pendências previstas antes da revisão por blocos."
+          description="Acompanhe o andamento da leitura técnica antes de seguir para a revisão."
           actions={[
-            <Button key="nho-library" variant="tertiary" onClick={() => setShowNhoLibraryModal(true)}>
-              Biblioteca NHO
-            </Button>,
             <NavLink
               key="review"
               to={`/app/prho/${id}/review`}
               className={buttonStyles({ variant: "primary" })}
             >
-              Ir para revisão por blocos
+              Seguir para revisão
             </NavLink>,
           ]}
         >
           <Stepper steps={flowSteps} current={1} />
         </PageHeader>
       }
-      bodyClassName="grid gap-4"
+      bodyClassName="grid gap-5"
     >
-      <Panel className="grid gap-6">
-        <div className="grid gap-4 rounded-[24px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-5 xl:grid-cols-[minmax(0,1.1fr)_300px] xl:items-center">
-          <div className="grid gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="grid gap-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-brand-blue-500)]">
-                  Progresso do processamento
-                </p>
-                <h3 className="text-[20px] font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
-                  A análise está organizando blocos, agentes e pendências
-                </h3>
-              </div>
-              <Badge tone="processing">{processingProgress}% concluído</Badge>
-            </div>
-            <p className="text-[14px] leading-6 text-[var(--color-text-soft)]">
-              O usuário já consegue entender quanto da leitura técnica foi concluído antes de seguir para a revisão por blocos.
-            </p>
-            <div className="grid gap-2">
-              <div className="h-3 overflow-hidden rounded-full bg-[var(--surface-base)]">
-                <div
-                  className="h-full rounded-full bg-[linear-gradient(90deg,#0fa47a_0%,#2d82b7_100%)] transition-all"
-                  style={{ width: `${processingProgress}%` }}
-                />
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-2 text-[12px] text-[var(--color-text-soft)]">
-                <span>Leitura documental, identificação de blocos e isolamento de pendências</span>
-                <span>Próxima entrega: revisão por blocos</span>
-              </div>
-            </div>
-          </div>
-          <div className="grid gap-3 rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-base)] p-4">
-            <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
-              Visão rápida
-            </span>
-            <div className="grid gap-2 text-[14px] text-[var(--color-text-default)]">
-              <div className="flex items-center justify-between gap-3">
-                <span>Blocos encontrados</span>
-                <strong>{blocks.length}</strong>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span>Agentes mapeados</span>
-                <strong>{metrics.agents.length}</strong>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span>Pendências previstas</span>
-                <strong>{metrics.openPendencies.length}</strong>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-          <StatCard
-            label="Documentos lidos"
-            value={analysis.documents}
-            hint="Arquivos lidos e classificados"
-            tone="positive"
-          />
-          <StatCard
-            label="Blocos operacionais"
-            value={blocks.length}
-            hint="Setor/local + GHE + função + operação"
-            tone="info"
-          />
-          <StatCard
-            label="Agentes detectados"
-            value={metrics.agents.length}
-            hint="Agentes de higiene dentro dos blocos"
-            tone="info"
-          />
-          <StatCard
-            label="Agentes genéricos / pendentes"
-            value={metrics.agentsWithoutMethod}
-            hint="Precisam de complemento técnico"
-            tone="critical"
-          />
-          <StatCard
-            label="Pendências críticas"
-            value={metrics.criticalPendencies.length}
-            hint="Bloqueiam a evolução automática"
-            tone={metrics.criticalPendencies.length ? "critical" : "positive"}
-          />
-          <StatCard
-            label="Documentos fora do escopo"
-            value={outOfScopeDocuments.length}
-            hint="Ergonômicos, acidentes ou anexos sem uso"
-            tone="status"
-          />
-        </div>
-
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_340px]">
-          <div className="rounded-[24px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-brand-blue-500)]">
-              Sequência técnica
-            </p>
-            <h3 className="mt-3 text-[18px] font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
-              Processamento orientado a blocos
-            </h3>
-            <p className="mt-2 text-[14px] leading-6 text-[var(--color-text-soft)]">
-              A extração agora encontra primeiro o bloco operacional e só então identifica os agentes de higiene dentro dele.
-            </p>
-            <div className="mt-5">
-              <Timeline items={prhoProcessingSequence} />
-            </div>
-          </div>
-
-          <div className="grid gap-4 rounded-[24px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-brand-blue-500)]">
-              Painel lateral
-            </p>
-            <div className="grid gap-3">
-              <div className="rounded-[18px] border border-[var(--color-border-subtle)] bg-[var(--surface-base)] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <strong className="text-[15px] font-semibold text-[var(--color-text-strong)]">
-                    Blocos encontrados
-                  </strong>
-                  <Badge tone="processing">{blocks.length}</Badge>
-                </div>
-                <p className="mt-2 text-[14px] leading-6 text-[var(--color-text-soft)]">
-                  Cabine de pintura, corte, forno e fracionamento já foram separados como blocos independentes.
-                </p>
-              </div>
-              <div className="rounded-[18px] border border-[var(--color-border-subtle)] bg-[var(--surface-base)] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <strong className="text-[15px] font-semibold text-[var(--color-text-strong)]">
-                    Agentes químicos mapeados
-                  </strong>
-                  <Badge tone="review">
-                    {
-                      metrics.agents.filter((agent) => agent.agentType === "Químico").length
-                    }
-                  </Badge>
-                </div>
-                <p className="mt-2 text-[14px] leading-6 text-[var(--color-text-soft)]">
-                  Tolueno e benzeno ficaram vinculados ao bloco de pintura, com alerta para segredo industrial.
-                </p>
-              </div>
-              <div className="rounded-[18px] border border-[var(--color-border-subtle)] bg-[var(--surface-base)] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <strong className="text-[15px] font-semibold text-[var(--color-text-strong)]">
-                    Agentes físicos mapeados
-                  </strong>
-                  <Badge tone="status">
-                    {
-                      metrics.agents.filter((agent) => agent.agentType === "Físico").length
-                    }
-                  </Badge>
-                </div>
-                <p className="mt-2 text-[14px] leading-6 text-[var(--color-text-soft)]">
-                  Ruído contínuo e calor IBUTG seguem com contexto operacional já separado por bloco.
-                </p>
-              </div>
-              <div className="rounded-[18px] border border-[var(--color-border-subtle)] bg-[var(--surface-base)] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <strong className="text-[15px] font-semibold text-[var(--color-text-strong)]">
-                    Pendências previstas
-                  </strong>
-                  <Badge tone={metrics.criticalPendencies.length ? "critical" : "review"}>
-                    {metrics.openPendencies.length}
-                  </Badge>
-                </div>
-                <p className="mt-2 text-[14px] leading-6 text-[var(--color-text-soft)]">
-                  Segredo industrial, CAS ausente, bloco sem agente e dados operacionais incompletos já ficam isolados para a revisão.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_360px]">
-          <Panel className="grid gap-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="grid gap-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-brand-blue-500)]">
-                  Painel de pendências
-                </p>
-                <h3 className="text-[18px] font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
-                  Priorização automática para a próxima revisão
-                </h3>
-                <p className="max-w-3xl text-[14px] leading-6 text-[var(--color-text-soft)]">
-                  O mockup já separa o que bloqueia a continuidade, o que exige complemento e o que pode seguir apenas com observação técnica.
-                </p>
-              </div>
-              <Badge tone="processing">{processingProgress}% do fluxo lido</Badge>
-            </div>
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-[20px] border border-[#efcdcd] bg-[rgba(255,243,243,0.72)] p-4">
-                <strong className="text-[14px] font-semibold text-[var(--color-text-strong)]">
-                  Críticas
-                </strong>
-                <p className="mt-2 text-[13px] leading-6 text-[var(--color-text-soft)]">
-                  {criticalPendencies.length} bloqueio imediato relacionado a segredo industrial ou ausência de dado essencial.
-                </p>
-              </div>
-              <div className="rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4">
-                <strong className="text-[14px] font-semibold text-[var(--color-text-strong)]">
-                  Altas
-                </strong>
-                <p className="mt-2 text-[13px] leading-6 text-[var(--color-text-soft)]">
-                  {highPendencies.length} pontos que pedem confirmação normativa ou complemento rastreável.
-                </p>
-              </div>
-              <div className="rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4">
-                <strong className="text-[14px] font-semibold text-[var(--color-text-strong)]">
-                  Médias
-                </strong>
-                <p className="mt-2 text-[13px] leading-6 text-[var(--color-text-soft)]">
-                  {mediumPendencies.length} observação operacional para fechar jornada, pausa ou detalhe de cenário.
-                </p>
-              </div>
-            </div>
-            <div className="grid gap-3">
-              {pendencies.map((item) => (
-                <div
-                  key={item.id}
-                  className="grid gap-3 rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-base)] p-4 md:grid-cols-[auto_minmax(0,1fr)_auto]"
-                >
-                  <Badge tone={getPendencyTone(item.severity)}>{item.severity}</Badge>
-                  <div className="grid gap-1">
-                    <strong className="text-[14px] font-semibold text-[var(--color-text-strong)]">
-                      {item.title}
-                    </strong>
-                    <p className="text-[13px] leading-6 text-[var(--color-text-soft)]">
-                      {item.description}
-                    </p>
-                  </div>
-                  <TechnicalBadge label={prhoPendingTypeLabels[item.type] || item.type} tone="status" />
-                </div>
-              ))}
-            </div>
-          </Panel>
-
-          <Panel className="grid gap-4">
+      <Panel className="grid gap-5">
+        <div className="grid gap-4 rounded-[24px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-5 md:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="grid gap-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-brand-blue-500)]">
-                Base técnica integrada
+                Progresso do processamento
               </p>
-              <h3 className="text-[18px] font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
-                Métodos que entram no enriquecimento
+              <h3 className="text-[20px] font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
+                A análise está sendo preparada para revisão
               </h3>
             </div>
-            <div className="grid gap-3">
-              {prhoNhoMethodLibrary.map((method) => (
-                <div
-                  key={method.id}
-                  className="rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="grid gap-1">
-                      <strong className="text-[14px] font-semibold text-[var(--color-text-strong)]">
-                        {method.label}
-                      </strong>
-                      <p className="text-[13px] leading-6 text-[var(--color-text-soft)]">
-                        {method.title}
-                      </p>
-                    </div>
-                    <Badge tone="review">{method.appliesTo.length} agentes</Badge>
-                  </div>
-                  <p className="mt-2 text-[13px] leading-6 text-[var(--color-text-soft)]">
-                    {method.summary}
-                  </p>
-                </div>
-              ))}
+            <Badge tone="processing">{processingProgress}% concluído</Badge>
+          </div>
+          <div className="grid gap-2">
+            <div className="h-3 overflow-hidden rounded-full bg-[var(--surface-base)]">
+              <div
+                className="h-full rounded-full bg-[linear-gradient(90deg,#0fa47a_0%,#2d82b7_100%)] transition-all"
+                style={{ width: `${processingProgress}%` }}
+              />
             </div>
-          </Panel>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[12px] text-[var(--color-text-soft)]">
+              <span>Leitura, classificação e organização técnica em andamento</span>
+              <span>Próxima etapa: revisão</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-1 rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
+              Blocos encontrados
+            </span>
+            <strong className="text-[28px] font-semibold tracking-[-0.04em] text-[var(--color-text-strong)]">
+              {blocks.length}
+            </strong>
+            <p className="text-[13px] leading-5 text-[var(--color-text-soft)]">
+              Estruturas operacionais separadas para revisão.
+            </p>
+          </div>
+          <div className="grid gap-1 rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
+              Agentes mapeados
+            </span>
+            <strong className="text-[28px] font-semibold tracking-[-0.04em] text-[var(--color-text-strong)]">
+              {metrics.agents.length}
+            </strong>
+            <p className="text-[13px] leading-5 text-[var(--color-text-soft)]">
+              Agentes já vinculados aos blocos encontrados.
+            </p>
+          </div>
+          <div className="grid gap-1 rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
+              Pendências previstas
+            </span>
+            <strong className="text-[28px] font-semibold tracking-[-0.04em] text-[var(--color-text-strong)]">
+              {metrics.openPendencies.length}
+            </strong>
+            <p className="text-[13px] leading-5 text-[var(--color-text-soft)]">
+              Pontos separados para validação humana.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-4 rounded-[24px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-5 md:p-6">
+          <div className="grid gap-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-brand-blue-500)]">
+              Etapas em execução
+            </p>
+            <p className="text-[13px] leading-6 text-[var(--color-text-soft)]">
+              Pipeline técnico simplificado antes da revisão.
+            </p>
+          </div>
+          <Timeline items={prhoProcessingSequence} />
+        </div>
+
+        <div className="flex justify-end rounded-[22px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4">
+          <NavLink
+            to={`/app/prho/${id}/review`}
+            className={buttonStyles({ variant: "primary" })}
+          >
+            Seguir para revisão
+          </NavLink>
         </div>
       </Panel>
-
-      <Modal
-        open={showNhoLibraryModal}
-        title="Biblioteca NHO"
-        description="Métodos disponíveis para apoiar o enriquecimento técnico durante o processamento."
-        onClose={() => setShowNhoLibraryModal(false)}
-        actions={[
-          <Button key="close-processing-nho" variant="ghost" onClick={() => setShowNhoLibraryModal(false)}>
-            Fechar
-          </Button>,
-        ]}
-      >
-        <div className="grid gap-3">
-          {prhoNhoMethodLibrary.map((method) => (
-            <div
-              key={method.id}
-              className="grid gap-3 rounded-[20px] border border-[var(--color-border-subtle)] bg-[var(--surface-muted)] p-4"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="grid gap-1">
-                  <strong className="text-[15px] font-semibold text-[var(--color-text-strong)]">
-                    {method.label} • {method.title}
-                  </strong>
-                  <p className="text-[13px] leading-6 text-[var(--color-text-soft)]">
-                    {method.summary}
-                  </p>
-                </div>
-                <Badge tone="status">{method.appliesTo.length} aplicações</Badge>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {method.appliesTo.map((item) => (
-                  <TechnicalBadge key={item} label={item} tone="review" />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Modal>
     </UnifiedPagePanel>
   );
 }
